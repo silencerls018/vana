@@ -1,98 +1,142 @@
 #!/bin/bash
 
-# 一键脚本：数据流动池 (DLP) 创建菜单版
-
-# 开启详细命令输出调试模式
-set -x
-
-echo "欢迎使用数据流动池 (DLP) 一键脚本！"
-echo "请选择要执行的步骤："
-echo "1. 克隆 DLP ChatGPT 仓库"
-echo "2. 创建 .env 文件"
-echo "3. 安装依赖"
-echo "4. 创建钱包"
-echo "5. 添加 Satori Testnet 到 MetaMask"
-echo "6. 导出私钥并导入 MetaMask"
-echo "7. 生成加密密钥"
-echo "8. 克隆 DLP 智能合约仓库"
-echo "9. 部署 DLP 智能合约"
-echo "10. 配置 DLP 合约"
-echo "11. 运行 Validator 节点"
-echo "0. 退出"
-read -p "请输入选项： " OPTION
-
-function prompt_continue() {
-    read -p "是否继续？(y/n)： " choice
-    if [[ "$choice" != "y" ]]; then
-        echo "操作已取消。"
-        exit 1
-    fi
+# 设置环境变量文件
+setup_env_file() {
+    echo "设置 .env 文件..."
+    cp .env.example .env
+    echo "请手动填充 DLP 特定的信息到 .env 文件中。"
 }
 
-case $OPTION in
-    1)
-        echo "克隆 DLP ChatGPT 仓库..."
-        git clone https://github.com/vana-com/vana-dlp-chatgpt.git && cd vana-dlp-chatgpt || exit
-        echo "克隆完成。"
-        ;;
-    2)
-        echo "创建 .env 文件..."
-        cp .env.example .env && echo "请在 .env 文件中填写 DLP 相关信息。"
-        ;;
-    3)
-        echo "安装依赖..."
-        poetry install && echo "依赖安装完成。"
-        ;;
-    4)
-        echo "创建钱包..."
-        vanacli wallet create --wallet.name default --wallet.hotkey default && echo "钱包创建完成。请保存助记词。"
-        ;;
-    5)
-        echo "请在 MetaMask 中添加 Satori Testnet 网络。"
-        echo "网络名称: Satori Testnet"
-        echo "RPC URL: https://rpc.satori.vana.org"
-        echo "Chain ID: 14801"
-        echo "货币: VANA"
-        ;;
-    6)
-        echo "导出冷钱包私钥..."
-        vanacli wallet export_private_key --wallet.name default --key_type coldkey && echo "请将私钥导入 MetaMask。"
-        echo "导出热钱包私钥..."
-        vanacli wallet export_private_key --wallet.name default --key_type hotkey && echo "请将热钱包私钥也导入 MetaMask。"
-        ;;
-    7)
-        echo "生成加密密钥..."
-        ./keygen.sh && echo "密钥生成完成。"
-        ;;
-    8)
-        echo "克隆 DLP 智能合约仓库..."
-        cd .. || exit
-        git clone https://github.com/vana-com/vana-dlp-smart-contracts.git && cd vana-dlp-smart-contracts || exit
-        echo "仓库克隆完成。"
-        ;;
-    9)
-        echo "请在 .env 文件中填写私钥、地址等信息。"
-        echo "部署 DLP 智能合约..."
-        npx hardhat deploy --network satori --tags DLPDeploy && echo "智能合约部署完成！"
-        ;;
-    10)
-        echo "请访问 https://satori.vanascan.io/address/ 配置 DLP 合约。"
-        echo "配置完成后，请更新 .env 文件中的 DLP 合约地址和加密密钥。"
-        ;;
-    11)
-        echo "运行 Validator 节点..."
-        poetry run python -m chatgpt.nodes.validator && echo "Validator 节点正在运行，请监控日志确保运行正常。"
-        ;;
-    0)
-        echo "退出脚本。"
-        exit 0
-        ;;
-    *)
-        echo "无效选项，请重新选择。"
-        ;;
-esac
+# 安装必要的依赖项
+install_dependencies() {
+    echo "安装依赖项..."
+    sudo apt update -y
+    sudo apt install -y git python3.11 python3-pip nodejs npm
+    pip install poetry
+    echo "依赖项安装完成。"
+}
 
-# 关闭详细命令输出调试模式
-set +x
+# 克隆仓库
+clone_repo() {
+    echo "克隆 vana-dlp-chatgpt 仓库..."
+    git clone https://github.com/vana-com/vana-dlp-chatgpt.git
+    cd vana-dlp-chatgpt
+}
 
-echo "脚本执行完成。感谢使用！"
+# 安装 Python 依赖项
+install_python_dependencies() {
+    echo "安装 Python 依赖项..."
+    poetry install
+}
+
+# 安装 vana CLI 工具
+install_vana_cli() {
+    echo "安装 vana CLI..."
+    pip install vana
+}
+
+# 创建钱包
+create_wallet() {
+    echo "创建钱包..."
+    vanacli wallet create --wallet.name default --wallet.hotkey default
+    echo "请保存钱包的助记词。"
+}
+
+# 导出钱包的私钥
+export_private_keys() {
+    echo "导出冷钱包和热钱包私钥..."
+    vanacli wallet export_private_key --wallet.name default --key.type coldkey
+    vanacli wallet export_private_key --wallet.name default --key.type hotkey
+    echo "请手动将这些私钥导入 Metamask 中。"
+}
+
+# 添加 Satori 测试网到 Metamask
+add_satori_to_metamask() {
+    echo "请手动添加 Satori 测试网到 Metamask，使用以下信息："
+    echo "网络名称: Satori Testnet"
+    echo "RPC URL: https://rpc.satori.vana.org"
+    echo "链ID: 14801"
+    echo "货币符号: VANA"
+}
+
+# 部署 DLP 智能合约
+deploy_dlp_contracts() {
+    echo "克隆 vana-dlp-smart-contracts 仓库..."
+    cd ..
+    git clone https://github.com/vana-com/vana-dlp-smart-contracts.git
+    cd vana-dlp-smart-contracts
+    echo "安装智能合约依赖项..."
+    yarn install
+
+    echo "配置 .env 文件并导入冷钱包私钥..."
+    read -p "请输入您的冷钱包私钥: " coldkey_private_key
+    echo "DEPLOYER_PRIVATE_KEY=$coldkey_private_key" >> .env
+    echo "OWNER_ADDRESS=<你的冷钱包地址>" >> .env
+    echo "SATORI_RPC_URL=https://rpc.satori.vana.org" >> .env
+    echo "DLP_NAME=<你的DLP名称>" >> .env
+    echo "DLP_TOKEN_NAME=<你的DLP代币名称>" >> .env
+    echo "DLP_TOKEN_SYMBOL=<你的DLP代币符号>" >> .env
+
+    echo "部署智能合约..."
+    npx hardhat deploy --network satori --tags DLPDeploy
+}
+
+# 配置 DLP
+configure_dlp() {
+    echo "配置 DLP 合约..."
+    echo "请访问 https://satori.vanascan.io/address/ 并执行配置操作。"
+}
+
+# 运行验证者节点
+run_validator_node() {
+    echo "启动验证者节点..."
+    poetry run python -m chatgpt.nodes.validator
+}
+
+# 主菜单
+show_menu() {
+    echo "请选择一个操作:"
+    echo "1. 安装依赖项"
+    echo "2. 克隆仓库并安装依赖项"
+    echo "3. 创建钱包并导入私钥"
+    echo "4. 部署 DLP 智能合约"
+    echo "5. 配置 DLP"
+    echo "6. 运行验证者节点"
+    echo "7. 退出"
+}
+
+# 主循环
+while true; do
+    show_menu
+    read -p "请输入选项 (1/2/3/4/5/6/7): " choice
+    case $choice in
+        1)
+            install_dependencies
+            ;;
+        2)
+            clone_repo
+            install_python_dependencies
+            ;;
+        3)
+            create_wallet
+            export_private_keys
+            add_satori_to_metamask
+            ;;
+        4)
+            deploy_dlp_contracts
+            ;;
+        5)
+            configure_dlp
+            ;;
+        6)
+            run_validator_node
+            ;;
+        7)
+            echo "退出脚本。"
+            exit 0
+            ;;
+        *)
+            echo "无效选项，请输入 1, 2, 3, 4, 5, 6 或 7."
+            ;;
+    esac
+done
