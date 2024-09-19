@@ -1,5 +1,17 @@
 #!/bin/bash
 
+# 安装 Docker
+install_docker() {
+    echo "安装 Docker..."
+    sudo apt update
+    sudo apt install -y apt-transport-https ca-certificates curl software-properties-common
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+    echo "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+    sudo apt update
+    sudo apt install -y docker-ce docker-ce-cli containerd.io
+    echo "Docker 安装完成。"
+}
+
 # 设置环境变量文件
 setup_env_file() {
     echo "设置 .env 文件..."
@@ -96,47 +108,51 @@ run_validator_node() {
 # 主菜单
 show_menu() {
     echo "请选择一个操作:"
-    echo "1. 安装依赖项"
-    echo "2. 克隆仓库并安装依赖项"
-    echo "3. 创建钱包并导入私钥"
-    echo "4. 部署 DLP 智能合约"
-    echo "5. 配置 DLP"
-    echo "6. 运行验证者节点"
-    echo "7. 退出"
+    echo "1. 安装 Docker"
+    echo "2. 安装依赖项"
+    echo "3. 克隆仓库并安装依赖项"
+    echo "4. 创建钱包并导入私钥"
+    echo "5. 部署 DLP 智能合约"
+    echo "6. 配置 DLP"
+    echo "7. 运行验证者节点"
+    echo "8. 退出"
 }
 
 # 主循环
 while true; do
     show_menu
-    read -p "请输入选项 (1/2/3/4/5/6/7): " choice
+    read -p "请输入选项 (1/2/3/4/5/6/7/8): " choice
     case $choice in
         1)
-            install_dependencies
+            install_docker
             ;;
         2)
+            install_dependencies
+            ;;
+        3)
             clone_repo
             install_python_dependencies
             ;;
-        3)
+        4)
             create_wallet
             export_private_keys
             add_satori_to_metamask
             ;;
-        4)
+        5)
             deploy_dlp_contracts
             ;;
-        5)
+        6)
             configure_dlp
             ;;
-        6)
+        7)
             run_validator_node
             ;;
-        7)
+        8)
             echo "退出脚本。"
             exit 0
             ;;
         *)
-            echo "无效选项，请输入 1, 2, 3, 4, 5, 6 或 7."
+            echo "无效选项，请输入 1, 2, 3, 4, 5, 6, 7 或 8."
             ;;
     esac
 done
